@@ -17,7 +17,7 @@ public class MainActivity extends Activity {
 //        GenFile genFile = MainActivity.class.getAnnotation(GenFile.class);
 //        Class.forName(genFile.packageName()+"."+genFile.className());
 
-        Map<String, Integer> timeoutMap = DmMsg$$Generated.reqTimeoutMap;
+        Map<String, Integer> timeoutMap = DmMsg$$Processed.reqTimeoutMap;
         for (String key : timeoutMap.keySet()){
 //            Log.i("", "key="+key+" timeout="+timeoutMap.get(key));
             PcTrace.p("key="+key+" timeout="+timeoutMap.get(key));

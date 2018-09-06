@@ -46,7 +46,7 @@ import javax.tools.Diagnostic;
         "com.sissi.annotation.GenFile",
 })
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
-public class MyAnnotationProcessor extends AbstractProcessor {
+public class MessageProcessor extends AbstractProcessor {
 
     private static boolean bDone = false;
 
@@ -109,7 +109,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         packageName = packageElement.getQualifiedName().toString();
 
         // 获取待生成文件的类名
-        className = msgDefClass.getSimpleName().toString()+"$$Generated";
+        className = msgDefClass.getSimpleName().toString();
 
         messager.printMessage(Diagnostic.Kind.NOTE, "msgDefClass: "+msgDefClass.getQualifiedName()
                 + " packageName="+packageName
@@ -191,6 +191,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         String fieldNameReqRspsMap = "reqRspsMap";
         String fieldNameReqTimeoutMap = "reqTimeoutMap";
         String fieldNameRspClazzMap = "rspClazzMap";
+        String classNameSuffix = "$$Processed";
 
         MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE);
@@ -236,7 +237,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
 
 
         // 构建Class
-        TypeSpec typeSpec = TypeSpec.classBuilder(className)
+        TypeSpec typeSpec = TypeSpec.classBuilder(className+classNameSuffix)
                 .addModifiers(Modifier.PUBLIC)
                 .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class),
                         fieldNameReqSet, Modifier.PUBLIC, Modifier.STATIC)

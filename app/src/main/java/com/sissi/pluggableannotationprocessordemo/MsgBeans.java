@@ -1,10 +1,20 @@
 package com.sissi.pluggableannotationprocessordemo;
 
+import com.sissi.annotation.SerializeEnumAsInt;
+
 /**
  * Created by Sissi on 2018/9/6.
  */
 
+@SerializeEnumAsInt
 public final class MsgBeans {
+
+
+    public enum SetType {
+        Phone,
+        Pad,
+        Tv,
+    }
 
     public static final class Login {
         public String account;
