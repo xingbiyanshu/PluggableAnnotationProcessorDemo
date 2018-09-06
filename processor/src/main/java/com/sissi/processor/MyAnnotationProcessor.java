@@ -1,7 +1,6 @@
 package com.sissi.processor;
 
 import com.google.auto.service.AutoService;
-import com.sissi.annotation.GenFile;
 import com.sissi.annotation.Message;
 import com.sissi.annotation.Request;
 import com.sissi.annotation.Response;
@@ -13,10 +12,8 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +28,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.MirroredTypeException;
@@ -89,6 +87,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         return true;
     }
 
+
     private boolean collectInfo(RoundEnvironment roundEnvironment){
         reqParaMap.clear();
         reqRspsMap.clear();
@@ -97,32 +96,26 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         reqSet.clear();
         rspSet.clear();
 
-        Set<? extends Element> genFileElements = roundEnvironment.getElementsAnnotatedWith(GenFile.class);
-        TypeElement genFileElement = null;
-        GenFile genFileAnno = null;
-        Iterator genFileIt = genFileElements.iterator();
-        while (genFileIt.hasNext()){
-            genFileElement = (TypeElement) genFileIt.next();
-            genFileAnno = genFileElement.getAnnotation(GenFile.class);
-            packageName = genFileAnno.packageName();
-            className = genFileAnno.className();
-            if (null != packageName && null != className) {
-                break;
-            }
-        }
-
-        if (null == packageName || null == className) {
-            return false;
-        }
-
         Set<? extends Element> msgSet = roundEnvironment.getElementsAnnotatedWith(Message.class);
 
         if (null==msgSet || !msgSet.iterator().hasNext()){
             return false;
         }
 
-
         TypeElement msgDefClass = (TypeElement) msgSet.iterator().next();
+
+        // 获取待生成文件的包名
+        PackageElement packageElement = (PackageElement) msgDefClass.getEnclosingElement();
+        packageName = packageElement.getQualifiedName().toString();
+
+        // 获取待生成文件的类名
+        className = msgDefClass.getSimpleName().toString()+"$$Generated";
+
+        messager.printMessage(Diagnostic.Kind.NOTE, "msgDefClass: "+msgDefClass.getQualifiedName()
+                + " packageName="+packageName
+                + " className="+className);
+
+        // 便利消息类的所有子元素,抽取“请求-响应”相关信息
         List<? extends Element> msgElements = msgDefClass.getEnclosedElements();
         Request request;
         Response response;
@@ -190,6 +183,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         return true;
     }
 
+
     private void generateFile(){
         String fieldNameReqSet = "reqSet";
         String fieldNameRspSet = "rspSet";
@@ -201,6 +195,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE);
 
+        // 构建代码块
         CodeBlock.Builder codeBlockBuilder = CodeBlock.builder()
                 .addStatement("$L = new $T<>()", fieldNameReqSet, HashSet.class)
                 .addStatement("$L = new $T<>()", fieldNameRspSet, HashSet.class)
@@ -243,12 +238,24 @@ public class MyAnnotationProcessor extends AbstractProcessor {
         // 构建Class
         TypeSpec typeSpec = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
-                .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class), fieldNameReqSet, Modifier.PUBLIC, Modifier.STATIC).build())
-                .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class), fieldNameRspSet, Modifier.PUBLIC, Modifier.STATIC).build())
-                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, Class.class), fieldNameReqParaMap, Modifier.PUBLIC, Modifier.STATIC).build())
-                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, String[].class), fieldNameReqRspsMap, Modifier.PUBLIC, Modifier.STATIC).build())
-                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, Integer.class), fieldNameReqTimeoutMap, Modifier.PUBLIC, Modifier.STATIC).build())
-                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, Class.class), fieldNameRspClazzMap, Modifier.PUBLIC, Modifier.STATIC).build())
+                .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class),
+                        fieldNameReqSet, Modifier.PUBLIC, Modifier.STATIC)
+                        .build())
+                .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class),
+                        fieldNameRspSet, Modifier.PUBLIC, Modifier.STATIC)
+                        .build())
+                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, Class.class),
+                        fieldNameReqParaMap, Modifier.PUBLIC, Modifier.STATIC)
+                        .build())
+                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, String[].class),
+                        fieldNameReqRspsMap, Modifier.PUBLIC, Modifier.STATIC)
+                        .build())
+                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, Integer.class),
+                        fieldNameReqTimeoutMap, Modifier.PUBLIC, Modifier.STATIC)
+                        .build())
+                .addField(FieldSpec.builder(ParameterizedTypeName.get(Map.class, String.class, Class.class),
+                        fieldNameRspClazzMap, Modifier.PUBLIC, Modifier.STATIC)
+                        .build())
                 .addStaticBlock(codeBlockBuilder.build())
                 .addMethod(constructor.build())
                 .build();
