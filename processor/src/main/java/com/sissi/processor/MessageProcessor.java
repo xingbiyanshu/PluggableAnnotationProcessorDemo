@@ -48,7 +48,7 @@ import javax.tools.Diagnostic;
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class MessageProcessor extends AbstractProcessor {
 
-    private static boolean bDone = false;
+    private boolean bDone = false;
 
     private Map<String, String> reqParaMap = new HashMap<>();
 
@@ -237,7 +237,7 @@ public class MessageProcessor extends AbstractProcessor {
 
 
         // 构建Class
-        TypeSpec typeSpec = TypeSpec.classBuilder(className+classNameSuffix)
+        TypeSpec typeSpec = TypeSpec.classBuilder(className+"$$"+MessageProcessor.class.getSimpleName())
                 .addModifiers(Modifier.PUBLIC)
                 .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class),
                         fieldNameReqSet, Modifier.PUBLIC, Modifier.STATIC)

@@ -10,11 +10,19 @@ import com.sissi.annotation.SerializeEnumAsInt;
 public final class MsgBeans {
 
 
+    //=> enum definitions
     public enum SetType {
         Phone,
         Pad,
         Tv,
     }
+
+    public enum Color {
+        Red,
+        Green,
+    }
+
+    //<= enum definitions
 
     public static final class Login {
         public String account;

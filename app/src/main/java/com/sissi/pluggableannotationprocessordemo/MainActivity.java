@@ -6,6 +6,7 @@ import android.util.Log;
 
 
 import java.util.Map;
+import java.util.Set;
 
 public class MainActivity extends Activity {
 
@@ -14,14 +15,15 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        GenFile genFile = MainActivity.class.getAnnotation(GenFile.class);
-//        Class.forName(genFile.packageName()+"."+genFile.className());
-
-        Map<String, Integer> timeoutMap = DmMsg$$Processed.reqTimeoutMap;
+        Map<String, Integer> timeoutMap = DmMsg$$MessageProcessor.reqTimeoutMap;
         for (String key : timeoutMap.keySet()){
 //            Log.i("", "key="+key+" timeout="+timeoutMap.get(key));
             PcTrace.p("key="+key+" timeout="+timeoutMap.get(key));
         }
-//        Log.i("", ReqRspMap$$FromAnnotation.getReqRspsMap());
+
+        Set<Class> serializeEnumAsIntSet = SerializeEnumAsInt$$SerializationProcessor.serializeEnumAsIntSet;
+        for (Class clz : serializeEnumAsIntSet){
+            PcTrace.p("clz="+clz);
+        }
     }
 }
