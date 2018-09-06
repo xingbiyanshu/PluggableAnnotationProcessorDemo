@@ -4,7 +4,7 @@ package com.sissi.pluggableannotationprocessordemo;
  * Created by Sissi on 2018/9/6.
  */
 
-public final class ReqRspBeans {
+public final class MsgBeans {
 
     public static final class Login {
         public String account;

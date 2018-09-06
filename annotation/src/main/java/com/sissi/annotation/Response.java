@@ -11,6 +11,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.CLASS)
-public @interface RspClazz {
+public @interface Response {
     Class value();
 }

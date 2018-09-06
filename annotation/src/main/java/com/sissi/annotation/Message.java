@@ -12,6 +12,5 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.CLASS)
-public @interface ReqDef {
-    Class rspDefClass(); // 定义响应的枚举类
+public @interface Message {
 }
