@@ -1,6 +1,7 @@
 package com.sissi.processor;
 
 import com.google.auto.service.AutoService;
+import com.sissi.annotation.Consumer;
 import com.sissi.annotation.Message;
 import com.sissi.annotation.Request;
 import com.sissi.annotation.Response;
@@ -32,6 +33,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.MirroredTypeException;
+import javax.lang.model.type.MirroredTypesException;
 import javax.tools.Diagnostic;
 
 /**
@@ -104,18 +106,7 @@ public class MessageProcessor extends AbstractProcessor {
 
         TypeElement msgDefClass = (TypeElement) msgSet.iterator().next();
 
-        // 获取待生成文件的包名
-        PackageElement packageElement = (PackageElement) msgDefClass.getEnclosingElement();
-        packageName = packageElement.getQualifiedName().toString();
-
-        // 获取待生成文件的类名
-        className = msgDefClass.getSimpleName().toString();
-
-        messager.printMessage(Diagnostic.Kind.NOTE, "msgDefClass: "+msgDefClass.getQualifiedName()
-                + " packageName="+packageName
-                + " className="+className);
-
-        // 便利消息类的所有子元素,抽取“请求-响应”相关信息
+        // 获取“请求-响应”相关信息
         List<? extends Element> msgElements = msgDefClass.getEnclosedElements();
         Request request;
         Response response;
@@ -151,10 +142,10 @@ public class MessageProcessor extends AbstractProcessor {
 
                 reqSet.add(reqName);
 
-                messager.printMessage(Diagnostic.Kind.NOTE, "request: "+reqName
-                        + " reqParaFullName: "+reqParaFullName
-                        + " rspSeq: "+request.rspSeq()
-                        + " timeout: "+request.timeout());
+//                messager.printMessage(Diagnostic.Kind.NOTE, "request: "+reqName
+//                        + " reqParaFullName: "+reqParaFullName
+//                        + " rspSeq: "+request.rspSeq()
+//                        + " timeout: "+request.timeout());
 
             }else if (null != (response = element.getAnnotation(Response.class))){
                 rspName = element.getSimpleName().toString();
@@ -169,8 +160,8 @@ public class MessageProcessor extends AbstractProcessor {
                     rspClazzFullName = classTypeElement.getQualifiedName().toString();
                 }
 
-                messager.printMessage(Diagnostic.Kind.NOTE, "response: "+rspName
-                        + " rspClazzFullName: "+rspClazzFullName);
+//                messager.printMessage(Diagnostic.Kind.NOTE, "response: "+rspName
+//                        + " rspClazzFullName: "+rspClazzFullName);
 
                 rspClazzMap.put(rspName, rspClazzFullName);
 
@@ -179,6 +170,54 @@ public class MessageProcessor extends AbstractProcessor {
             }
 
         }
+
+
+        // 获取待生成文件的包名
+        Set<? extends Element> consumerSet = roundEnvironment.getElementsAnnotatedWith(Consumer.class);
+        Consumer consumer;
+        Class[] clzs;
+        boolean found = false;
+        for (Element element:consumerSet){
+            if (found){
+                break;
+            }
+            consumer = element.getAnnotation(Consumer.class);
+            try {
+                clzs = consumer.value();
+                for (Class cls : clzs){
+//                    messager.printMessage(Diagnostic.Kind.NOTE, "Message.class.getCanonicalName(): "+Message.class.getCanonicalName()
+//                            + "\n clz name="+clz.getCanonicalName());
+                    if (Message.class.getCanonicalName().equals(cls.getCanonicalName())){
+                        PackageElement packageElement = (PackageElement) element.getEnclosingElement();
+                        packageName = packageElement.getQualifiedName().toString();
+                        messager.printMessage(Diagnostic.Kind.NOTE, "packageName: "+packageName);
+                        found = true;
+                        break;
+                    }
+                }
+            }catch (MirroredTypesException mte) {
+                List<DeclaredType> classTypeMirrors = (List<DeclaredType>) mte.getTypeMirrors();
+                for (DeclaredType classTypeMirror : classTypeMirrors) {
+                    TypeElement classTypeElement = (TypeElement) classTypeMirror.asElement();
+//                    messager.printMessage(Diagnostic.Kind.NOTE, "Message.class: " + Message.class.getCanonicalName()
+//                            + "\nclz name=" + classTypeElement.getQualifiedName().toString());
+                    if (Message.class.getCanonicalName().equals(classTypeElement.getQualifiedName().toString())){
+                        PackageElement packageElement = (PackageElement) element.getEnclosingElement();
+                        packageName = packageElement.getQualifiedName().toString();
+                        found = true;
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        // 获取待生成文件的类名
+        className = Message.class.getSimpleName()+"$$"+MessageProcessor.class.getSimpleName();
+
+        messager.printMessage(Diagnostic.Kind.NOTE, "msgDefClass="+msgDefClass.getQualifiedName()
+                + "\ngen packageName="+packageName
+                + "\ngen className="+className);
 
         return true;
     }
@@ -191,7 +230,6 @@ public class MessageProcessor extends AbstractProcessor {
         String fieldNameReqRspsMap = "reqRspsMap";
         String fieldNameReqTimeoutMap = "reqTimeoutMap";
         String fieldNameRspClazzMap = "rspClazzMap";
-        String classNameSuffix = "$$Processed";
 
         MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
                 .addModifiers(Modifier.PRIVATE);
@@ -237,7 +275,7 @@ public class MessageProcessor extends AbstractProcessor {
 
 
         // 构建Class
-        TypeSpec typeSpec = TypeSpec.classBuilder(className+"$$"+MessageProcessor.class.getSimpleName())
+        TypeSpec typeSpec = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
                 .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, String.class),
                         fieldNameReqSet, Modifier.PUBLIC, Modifier.STATIC)

@@ -1,6 +1,8 @@
 package com.sissi.processor;
 
 import com.google.auto.service.AutoService;
+import com.sissi.annotation.Consumer;
+import com.sissi.annotation.Message;
 import com.sissi.annotation.SerializeEnumAsInt;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
@@ -10,11 +12,8 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -27,7 +26,10 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.MirroredTypesException;
 import javax.tools.Diagnostic;
 
 /**
@@ -78,7 +80,7 @@ public class SerializationProcessor extends AbstractProcessor {
         TypeElement typeElement;
         for (Element element : elements){
             typeElement = (TypeElement) element;
-            messager.printMessage(Diagnostic.Kind.NOTE, "SerializeEnumAsInt element="+typeElement.getQualifiedName());
+//            messager.printMessage(Diagnostic.Kind.NOTE, "SerializeEnumAsInt element="+typeElement.getQualifiedName());
             if (ElementKind.ENUM == typeElement.getKind()){
                 // 修饰的枚举类型则直接针对该枚举类型生效
                 serializeEnumAsIntSet.add(typeElement.getQualifiedName().toString());
@@ -86,7 +88,7 @@ public class SerializationProcessor extends AbstractProcessor {
                 // 修饰的非枚举类型则针对该类型的直接内部枚举类型生效
                 List<? extends Element> subElements = element.getEnclosedElements();
                 for (Element subElement : subElements){
-                    messager.printMessage(Diagnostic.Kind.NOTE, "subElement="+subElement.getSimpleName());
+//                    messager.printMessage(Diagnostic.Kind.NOTE, "subElement="+subElement.getSimpleName());
                     if (ElementKind.ENUM != subElement.getKind()){
                         continue;
                     }
@@ -96,8 +98,46 @@ public class SerializationProcessor extends AbstractProcessor {
             }
         }
 
-        packageName = "com.sissi.pluggableannotationprocessordemo";
-        className = "SerializeEnumAsInt";
+        // 获取待生成文件的包名
+        Set<? extends Element> consumerSet = roundEnvironment.getElementsAnnotatedWith(Consumer.class);
+        Consumer consumer;
+        Class[] clzs;
+        boolean found = false;
+        for (Element element:consumerSet){
+            if (found){
+                break;
+            }
+            consumer = element.getAnnotation(Consumer.class);
+            try {
+                clzs = consumer.value();
+                for (Class clz : clzs){
+                    if (SerializeEnumAsInt.class.getCanonicalName().equals(clz.getCanonicalName())){
+                        PackageElement packageElement = (PackageElement) element.getEnclosingElement();
+                        packageName = packageElement.getQualifiedName().toString();
+                        found = true;
+                        break;
+                    }
+                }
+            }catch (MirroredTypesException mte) {
+                List<DeclaredType> classTypeMirrors = (List<DeclaredType>) mte.getTypeMirrors();
+                for (DeclaredType classTypeMirror : classTypeMirrors) {
+                    TypeElement classTypeElement = (TypeElement) classTypeMirror.asElement();
+                    if (SerializeEnumAsInt.class.getCanonicalName().equals(classTypeElement.getQualifiedName().toString())){
+                        PackageElement packageElement = (PackageElement) element.getEnclosingElement();
+                        packageName = packageElement.getQualifiedName().toString();
+                        found = true;
+                        break;
+                    }
+                }
+
+            }
+        }
+
+        // 获取待生成文件的类名
+        className = SerializeEnumAsInt.class.getSimpleName()+"$$"+SerializationProcessor.class.getSimpleName();
+
+        messager.printMessage(Diagnostic.Kind.NOTE, "\ngen packageName="+packageName
+                + "\ngen className="+className);
 
         return true;
     }
@@ -117,7 +157,7 @@ public class SerializationProcessor extends AbstractProcessor {
         }
 
         // 构建Class
-        TypeSpec typeSpec = TypeSpec.classBuilder(className+"$$"+SerializationProcessor.class.getSimpleName())
+        TypeSpec typeSpec = TypeSpec.classBuilder(className)
                 .addModifiers(Modifier.PUBLIC)
                 .addField(FieldSpec.builder(ParameterizedTypeName.get(Set.class, Class.class),
                         fieldNameSerializeEnumAsIntSet, Modifier.PUBLIC, Modifier.STATIC)

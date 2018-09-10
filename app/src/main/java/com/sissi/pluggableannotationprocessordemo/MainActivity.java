@@ -5,9 +5,14 @@ import android.os.Bundle;
 import android.util.Log;
 
 
+import com.sissi.annotation.Consumer;
+import com.sissi.annotation.Message;
+import com.sissi.annotation.SerializeEnumAsInt;
+
 import java.util.Map;
 import java.util.Set;
 
+@Consumer({Message.class, SerializeEnumAsInt.class})
 public class MainActivity extends Activity {
 
     @Override
@@ -15,7 +20,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Map<String, Integer> timeoutMap = DmMsg$$MessageProcessor.reqTimeoutMap;
+        Map<String, Integer> timeoutMap = Message$$MessageProcessor.reqTimeoutMap;
         for (String key : timeoutMap.keySet()){
 //            Log.i("", "key="+key+" timeout="+timeoutMap.get(key));
             PcTrace.p("key="+key+" timeout="+timeoutMap.get(key));
