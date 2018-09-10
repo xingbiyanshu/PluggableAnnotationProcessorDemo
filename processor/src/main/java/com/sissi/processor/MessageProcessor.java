@@ -213,7 +213,7 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         // 获取待生成文件的类名
-        className = Message.class.getSimpleName()+"$$"+MessageProcessor.class.getSimpleName();
+        className = Message.class.getSimpleName()+"$$Generated";
 
         messager.printMessage(Diagnostic.Kind.NOTE, "msgDefClass="+msgDefClass.getQualifiedName()
                 + "\ngen packageName="+packageName

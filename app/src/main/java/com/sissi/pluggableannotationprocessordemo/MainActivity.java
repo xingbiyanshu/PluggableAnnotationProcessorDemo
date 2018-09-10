@@ -20,13 +20,13 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Map<String, Integer> timeoutMap = Message$$MessageProcessor.reqTimeoutMap;
+        Map<String, Integer> timeoutMap = Message$$Generated.reqTimeoutMap;
         for (String key : timeoutMap.keySet()){
 //            Log.i("", "key="+key+" timeout="+timeoutMap.get(key));
             PcTrace.p("key="+key+" timeout="+timeoutMap.get(key));
         }
 
-        Set<Class> serializeEnumAsIntSet = SerializeEnumAsInt$$SerializationProcessor.serializeEnumAsIntSet;
+        Set<Class> serializeEnumAsIntSet = SerializeEnumAsInt$$Generated.serializeEnumAsIntSet;
         for (Class clz : serializeEnumAsIntSet){
             PcTrace.p("clz="+clz);
         }
